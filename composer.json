@@ -8,9 +8,6 @@
         "name": "Uncle Cheese",
         "email": "unclecheese@leftandmain.com"
     }],
-    "require": {
-        "silverstripe/framework": "4.*"
-    },
     "extra": {
         "installer-name": "dropzone",
         "expose": [
