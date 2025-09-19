@@ -2,28 +2,28 @@
 
 namespace UncleCheese\Dropzone;
 
+use SilverStripe\Assets\File;
+use SilverStripe\Assets\Image;
+use SilverStripe\Core\Convert;
+use SilverStripe\Assets\Folder;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Forms\FileField;
+use SilverStripe\ORM\ManyManyList;
+use SilverStripe\ORM\RelationList;
+use SilverStripe\Admin\LeftAndMain;
+use SilverStripe\View\Requirements;
+use SilverStripe\Control\Controller;
+use SilverStripe\Core\Config\Config;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Control\HTTPResponse;
+use SilverStripe\Model\List\ArrayList;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\ORM\DataObjectInterface;
+use SilverStripe\ORM\UnsavedRelationList;
 use SilverStripe\Core\Manifest\ModuleLoader;
 use SilverStripe\Core\Manifest\ModuleManifest;
 use SilverStripe\Core\Manifest\ModuleResourceLoader;
-use SilverStripe\Forms\FileField;
-use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DataObjectInterface;
-use SilverStripe\View\Requirements;
-use SilverStripe\Control\Controller;
-use SilverStripe\Control\HTTPRequest;
-use SilverStripe\Control\HTTPResponse;
-use SilverStripe\Core\Config\Config;
-use SilverStripe\Assets\File;
-use SilverStripe\Assets\Folder;
-use SilverStripe\Assets\Image;
-use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Admin\LeftAndMain;
-use SilverStripe\Core\Convert;
-use SilverStripe\ORM\ManyManyList;
-use SilverStripe\ORM\SS_List;
-use SilverStripe\ORM\ArrayList;
-use SilverStripe\ORM\RelationList;
-use SilverStripe\ORM\UnsavedRelationList;
+use SilverStripe\Model\List\SS_List;
 
 /**
  * Defines the FileAttachementField form field type
@@ -163,12 +163,34 @@ class FileAttachmentField extends FileField
     {
         $bytes = min(
             array(
-            File::ini2bytes(ini_get('post_max_size') ?: '8M'),
-            File::ini2bytes(ini_get('upload_max_filesize') ?: '2M')
+            static::ini2bytes(ini_get('post_max_size') ?: '8M'),
+            static::ini2bytes(ini_get('upload_max_filesize') ?: '2M')
             )
         );
 
         return floor($bytes/(1024*1024));
+    }
+
+    /**
+     * Converts a php.ini size value (e.g. "2M", "512K") to bytes.
+     *
+     * @param string $val
+     * @return int
+     */
+    public static function ini2bytes($val)
+    {
+        $val = trim($val);
+        $last = strtolower($val[strlen($val)-1]);
+        $val = (int)$val;
+        switch($last) {
+            case 'g':
+                $val *= 1024;
+            case 'm':
+                $val *= 1024;
+            case 'k':
+                $val *= 1024;
+        }
+        return $val;
     }
 
     /**
@@ -490,7 +512,7 @@ class FileAttachmentField extends FileField
      *
      * @return boolean
      */
-    public function validate($validator)
+    public function validate_old($validator)
     {
         $result = true;
 
@@ -1298,7 +1320,7 @@ class FileAttachmentField extends FileField
         $name = $this->getName();
         $record = $this->getRecord();
 
-        $ext = pathinfo($filename, PATHINFO_EXTENSION);
+        $ext = !empty($filename) ? pathinfo($filename, PATHINFO_EXTENSION) : '';
         $defaultClass = File::get_class_for_file_extension($ext);
 
         if(empty($name) || empty($record)) {
@@ -1411,7 +1433,7 @@ class FileAttachmentField extends FileField
             throw new Exception("FileAttachmentField::getDefaults() - There is no config json file at $file_path");
         }
 
-        return Convert::json2array(file_get_contents($file_path));
+        return json_decode(file_get_contents($file_path), true);
     }
 
     /**
@@ -1486,7 +1508,7 @@ class FileAttachmentField extends FileField
             }
         }
 
-        return Convert::array2json($data);
+        return json_encode($data);
     }
 
     public function performReadonlyTransformation()
