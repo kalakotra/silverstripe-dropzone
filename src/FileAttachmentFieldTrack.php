@@ -43,8 +43,8 @@ class FileAttachmentFieldTrack extends DataObject
         parent::onBeforeWrite();
         if (!$this->exists()) {
             // Store record this file was tracked on.
-            if (!$this->RecordID && Controller::has_curr()) {
-                $controller = Controller::curr();
+            $controller = Controller::curr();
+            if (!$this->RecordID && $controller) {
                 $pageRecord = null;
                 if ($controller->hasMethod('data')) {
                     // Store page visiting on frontend (ContentController)
